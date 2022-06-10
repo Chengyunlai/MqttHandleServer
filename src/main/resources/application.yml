@@ -1,0 +1,9 @@
+mqtt:
+  broker: tcp://106.52.68.129:1883
+  clientId: mqttx_test
+  username: admin
+  password: public
+  timeout: 2000
+  KeepAlive: 0
+  topics: toWeb
+  qos: 1
