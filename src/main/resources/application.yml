@@ -7,3 +7,6 @@ mqtt:
   KeepAlive: 0
   topics: toWeb
   qos: 1
+logging:
+  file:
+    path: Log

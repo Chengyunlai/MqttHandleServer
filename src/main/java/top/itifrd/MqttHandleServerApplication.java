@@ -17,6 +17,8 @@ public class MqttHandleServerApplication extends JFrame {
         MqttSubscription bean = run.getBean(MqttSubscription.class);
         MqttDataView bean1 = run.getBean(MqttDataView.class);
         bean1.run();
-        bean.subscription("toWeb",1);
+        String[] topics = new String[]{"toWeb101","toWeb102","toWeb103","toWeb104","toWeb107","toWeb109","toWeb110"};
+        int[] qos = new int[]{1,1,1,1,1,1,1};
+        bean.subscription(topics,qos);
     }
 }

@@ -30,7 +30,7 @@ public class MqttSubscription {
         log.info("订阅客户端加载完毕");
     }
 
-    public void subscription(String topic, int qos){
+    public void subscription(String[] topic, int[] qos){
         try {
             AsyncClient.subscribe(topic,qos);
             log.info("订阅成功");
