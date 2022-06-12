@@ -42,7 +42,7 @@ public class MqttDataView implements Runnable{
         Set set = map.keySet();
         Object[] arr = set.toArray();
         int row = arr.length;
-        table = new JTable(row,4);
+        table = new JTable(row,6);
         DefaultTableCellRenderer r=new DefaultTableCellRenderer();
         r.setHorizontalAlignment(JLabel.CENTER);
         table.setDefaultRenderer(Object.class,r);
@@ -63,13 +63,13 @@ public class MqttDataView implements Runnable{
         Set set=map.keySet();
         Object[] arr=set.toArray();
         Arrays.sort(arr);
-        for(String key : map.keySet()){
-            Object o = map.get(key);
-            log.info("key:{},Value:{}",key,o);
-        }
+        // for(String key : map.keySet()){
+        //     Object o = map.get(key);
+        //     log.info("key:{},Value:{}",key,o);
+        // }
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
-        model.setColumnIdentifiers(new Object[]{"设备编号","传感器名称","传感器数值","时间"});
+        model.setColumnIdentifiers(new Object[]{"网关编号","设备编号","传感器名称","传感器数值","时间","是否报警"});
         for (int i = 0; i < arr.length; i++) {
             ArrayList list = map.get(arr[i]);
             model.addRow(list.toArray());

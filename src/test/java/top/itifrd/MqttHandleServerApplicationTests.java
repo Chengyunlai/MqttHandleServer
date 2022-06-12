@@ -8,6 +8,9 @@ class MqttHandleServerApplicationTests {
 
     @Test
     void contextLoads() {
+        // double a = 1792;
+        // System.out.println(1 < 1790);
+        // System.out.println("你好");
     }
 
 }

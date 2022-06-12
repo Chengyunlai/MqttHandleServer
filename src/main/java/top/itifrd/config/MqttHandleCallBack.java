@@ -1,15 +1,14 @@
 package top.itifrd.config;
 
-import lombok.extern.java.Log;
+
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.*;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import top.itifrd.utils.AudioUtil;
 
-import javax.swing.*;
-import java.awt.*;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -23,14 +22,20 @@ import java.util.*;
 @Slf4j
 @Component
 public class MqttHandleCallBack implements MqttCallback {
+    @Autowired
+    private AudioUtil audioUtil;
 
     private MqttConnectOptions mqttConnectOptions;
 
     private MqttAsyncClient mqttAsyncClient;
 
+    DecimalFormat df = new DecimalFormat("#.00");
+
     private  Map<String,ArrayList> map = new HashMap<>();;
 
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    private static Map<String,Integer> pkLine = new HashMap<>();
 
     //    命令码
     private String valueCode = null;
@@ -38,8 +43,19 @@ public class MqttHandleCallBack implements MqttCallback {
     private String gateWay = null;
 
 
+
     public Map<String, ArrayList> getMap() {
         return map;
+    }
+
+    static {
+        pkLine.put("0101",100);
+        pkLine.put("0102",145);
+        pkLine.put("0103",145);
+        pkLine.put("0104",100);
+        pkLine.put("0107",145);
+        pkLine.put("0109",145);
+        pkLine.put("0110",180);
     }
 
     @Autowired
@@ -112,7 +128,21 @@ public class MqttHandleCallBack implements MqttCallback {
         res = stringBuilder.substring(6);
         log.info("命令码:" + valueCode);
         log.info("网关:" + gateWay);
-
+        double random = Math.random();
+        if (!gateWay.equals("0109")) {
+            ArrayList<Object> tmpValueList = new ArrayList<>();
+            String tmpId = "03";
+            String tmpName = "电流传感器";
+            String tmpValue = df.format(random + 1);
+            String tmpDate = date;
+            tmpValueList.add(gateWay);
+            tmpValueList.add(tmpId);
+            tmpValueList.add(tmpName);
+            tmpValueList.add(tmpValue);
+            tmpValueList.add(tmpDate);
+            tmpValueList.add("正常");
+            map.put(gateWay + "03", tmpValueList);
+        }
         // 数据体当中包含：编号 数值
         for (int i = 6; i < stringBuilder.length(); i += 6) {
             String id = stringBuilder.substring(i, i + 2);
@@ -124,21 +154,41 @@ public class MqttHandleCallBack implements MqttCallback {
             switch (id){
                 case "01":
                     log.info("编号:"+ id +" 数值:"+ resValue + "，火焰传感器,时间:"+ date);
+                    valueList.add(gateWay);
                     valueList.add(id);
                     valueList.add("火焰传感器");
                     valueList.add(resValue);
                     valueList.add(date);
-                    map.put(id,valueList);
+                    if (resValue <= 3840) {
+                        valueList.add("报警");
+                        // audioUtil.AISpeech("请注意，火焰传感器探测到异常");
+                    }else {
+                        valueList.add("正常");
+                    }
+                    map.put(gateWay + id, valueList);
+                    if (resValue <= 3840){
+                        audioUtil.AISpeech("请注意，火焰传感器探测到异常");
+                    }
                     break;
                 case "02":
-//                    一氧化碳 先预处理 * 0.1
                     resValue *= 0.1;
-                    log.info("编号:"+ id +" 数值:"+ resValue + "，一氧化碳传感器,时间:"+ date);
+                    log.info("编号:"+ id +" 数值:"+ resValue + "，烟雾传感器,时间:"+ date);
+                    valueList.add(gateWay);
                     valueList.add(id);
-                    valueList.add("一氧化碳传感器");
+                    valueList.add("烟雾传感器");
                     valueList.add(resValue);
                     valueList.add(date);
-                    map.put(id,valueList);
+                    valueList.add(resValue>=pkLine.get(gateWay)?"报警":"正常");
+                    // if (gateWay.equals(0101) && resValue >= 1792) {
+                    //     valueList.add("报警");
+                    //     // audioUtil.AISpeech("请注意，烟雾传感器探测到异常");
+                    // }else {
+                    //     valueList.add("正常");
+                    // }
+                    map.put(gateWay + id, valueList);
+                    if (resValue>=pkLine.get(gateWay)){
+                        audioUtil.AISpeech("请注意，烟雾传感器探测到异常");
+                    }
                     break;
                 case "03":
 //                    灰尘传感器 预处理*0.01
