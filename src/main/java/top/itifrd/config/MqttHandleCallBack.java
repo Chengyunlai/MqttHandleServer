@@ -37,6 +37,8 @@ public class MqttHandleCallBack implements MqttCallback {
 
     private static Map<String,Integer> pkLine = new HashMap<>();
 
+    private static Map<String,String> name_gateWay = new HashMap<>();
+
     //    命令码
     private String valueCode = null;
     //    网关编号
@@ -49,13 +51,26 @@ public class MqttHandleCallBack implements MqttCallback {
     }
 
     static {
-        pkLine.put("0101",100);
-        pkLine.put("0102",145);
-        pkLine.put("0103",145);
-        pkLine.put("0104",100);
-        pkLine.put("0107",145);
-        pkLine.put("0109",145);
-        pkLine.put("0110",180);
+        pkLine.put("0101",120);
+        pkLine.put("0102",105);
+        pkLine.put("0103",115);
+        pkLine.put("0104",42);
+        pkLine.put("0107",82);
+        pkLine.put("0109",135);
+        pkLine.put("0110",168);
+
+        name_gateWay.put("0101","水溶性型芯压注机:55-25 [0101]");
+        name_gateWay.put("0102","压蜡机:55-100T-31 [0102]");
+        name_gateWay.put("0103","合模力250射蜡机:KNC [0103]");
+        name_gateWay.put("0104","化蜡机:95-25-20 [0104]");
+        name_gateWay.put("0105","(双工位)射蜡机:104-57 [0105]");
+        name_gateWay.put("0106","名称暂定 [0106]");
+        name_gateWay.put("0107","高压压蜡机:SM55-100-32 [0107]");
+        name_gateWay.put("0108","高压压蜡机:SM-55-18 [0108]");
+        name_gateWay.put("0109","101组合班 [0109]");
+        name_gateWay.put("0110","高压射蜡机SA35-150-4[0110]");
+        name_gateWay.put("0111","103组合班 [0111]");
+
     }
 
     @Autowired
@@ -87,21 +102,21 @@ public class MqttHandleCallBack implements MqttCallback {
         log.info("收到数据");
         // 做图形化数据的展示
         byte[] payload = message.getPayload();
+        log.info("原始数据:{}",payload);
         StringBuilder sb = new StringBuilder();
         for (byte b : payload) {
+            // log.info("将数据转换成16进制");
             sb.append(hex10To16(b));
         }
-
         Date date = new Date();
         String formatDate = simpleDateFormat.format(date);
-        convertValue(sb,formatDate);
-
         log.info("============》》接收消息主题 : " + topic);
         log.info("============》》接收消息Qos : " + message.getQos());
         log.info("============》》接收消息内容 : " + sb);
         log.info("============》》接收ID : " + message.getId());
         log.info("============》》接收数据的时间" + formatDate);
         log.info("接收数据结束 下面可以执行数据处理操作");
+        convertValue(sb,formatDate);
     }
 
     @Override
@@ -111,31 +126,52 @@ public class MqttHandleCallBack implements MqttCallback {
 
     //    十进制转换十六进制
     public static String hex10To16(byte value) {
-        String newValue = String.format("%02x", value);
-        return newValue.substring(newValue.length() - 2, newValue.length());
+        String newValue = null;
+        try {
+            newValue = String.format("%02x", value);
+            newValue.substring(newValue.length() - 2, newValue.length());
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("十进制转十六进制出错");
+        }
+        return newValue;
     }
 
     public static float hex16To10(String value) {
-        return Long.parseLong(value, 16);
+        long l = 0;
+        try {
+            l = Long.parseLong(value, 16);
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("十六进制转十进制出错");
+        }
+        return l;
     }
 
     //    将数据进行转义 + 持久化
     public void convertValue(StringBuilder stringBuilder,String date) {
-//        Map<Integer,String> map = new HashMap<>();
-        String res = "";
+        log.info("消息转义体的原始内容:{}",stringBuilder);
+        String res = null;
+        // valueCode 一般以aa打头 没有问题
         valueCode = stringBuilder.substring(0, 2);
+        log.info("命令码:{}",valueCode);
+        // gate 表示网关
         gateWay = stringBuilder.substring(2, 6);
+        log.info("网关:{}",gateWay);
+        //
         res = stringBuilder.substring(6);
-        log.info("命令码:" + valueCode);
-        log.info("网关:" + gateWay);
+        log.info("数据体(id+值):{}",res);
+        log.info("数据体的长度:{}",res.length());
+
+        // 下面是模拟的电流数据
         double random = Math.random();
-        if (!gateWay.equals("0109")) {
+        if (!"0109".equals(gateWay) || !"0111".equals(gateWay)) {
             ArrayList<Object> tmpValueList = new ArrayList<>();
             String tmpId = "03";
             String tmpName = "电流传感器";
             String tmpValue = df.format(random + 1);
             String tmpDate = date;
-            tmpValueList.add(gateWay);
+            tmpValueList.add(name_gateWay.get(gateWay));
             tmpValueList.add(tmpId);
             tmpValueList.add(tmpName);
             tmpValueList.add(tmpValue);
@@ -144,24 +180,25 @@ public class MqttHandleCallBack implements MqttCallback {
             map.put(gateWay + "03", tmpValueList);
         }
         // 数据体当中包含：编号 数值
-        for (int i = 6; i < stringBuilder.length(); i += 6) {
-            String id = stringBuilder.substring(i, i + 2);
-
-            String value = stringBuilder.substring(i + 2, i + 6);
+        for (int dataIndex = 0; dataIndex < res.length(); dataIndex += 6) {
+            String id = res.substring(dataIndex, dataIndex + 2);
+            log.info("i , i+2" +(dataIndex) + " " +(dataIndex+2));
+            log.info("设备的id:{}",id);
+            String value = res.substring(dataIndex + 2, dataIndex + 6);
+            log.info("i+2 , i+6" + (dataIndex+2) +" " +(dataIndex+6));
+            log.info("设备的值:{}",value);
             float resValue = hex16To10(value);
-
             ArrayList<Object> valueList = new ArrayList<>();
             switch (id){
                 case "01":
                     log.info("编号:"+ id +" 数值:"+ resValue + "，火焰传感器,时间:"+ date);
-                    valueList.add(gateWay);
+                    valueList.add(name_gateWay.get(gateWay));
                     valueList.add(id);
                     valueList.add("火焰传感器");
                     valueList.add(resValue);
                     valueList.add(date);
                     if (resValue <= 3840) {
-                        valueList.add("报警");
-                        // audioUtil.AISpeech("请注意，火焰传感器探测到异常");
+                        valueList.add("--报警--");
                     }else {
                         valueList.add("正常");
                     }
@@ -173,18 +210,13 @@ public class MqttHandleCallBack implements MqttCallback {
                 case "02":
                     resValue *= 0.1;
                     log.info("编号:"+ id +" 数值:"+ resValue + "，烟雾传感器,时间:"+ date);
-                    valueList.add(gateWay);
+                    log.info("网关:{}",gateWay);
+                    valueList.add(name_gateWay.get(gateWay));
                     valueList.add(id);
                     valueList.add("烟雾传感器");
                     valueList.add(resValue);
                     valueList.add(date);
-                    valueList.add(resValue>=pkLine.get(gateWay)?"报警":"正常");
-                    // if (gateWay.equals(0101) && resValue >= 1792) {
-                    //     valueList.add("报警");
-                    //     // audioUtil.AISpeech("请注意，烟雾传感器探测到异常");
-                    // }else {
-                    //     valueList.add("正常");
-                    // }
+                    valueList.add(resValue>=pkLine.get(gateWay)?"--报警--":"正常");
                     map.put(gateWay + id, valueList);
                     if (resValue>=pkLine.get(gateWay)){
                         audioUtil.AISpeech("请注意，烟雾传感器探测到异常");

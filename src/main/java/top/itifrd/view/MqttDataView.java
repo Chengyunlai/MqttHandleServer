@@ -52,7 +52,6 @@ public class MqttDataView implements Runnable{
         head.setFont(new Font("楷体", Font.PLAIN, 26));// 设置表格字体
         contentPane.add(new JScrollPane(table));
         frame.setVisible(true);
-
         return frame;
     }
 
@@ -63,18 +62,13 @@ public class MqttDataView implements Runnable{
         Set set=map.keySet();
         Object[] arr=set.toArray();
         Arrays.sort(arr);
-        // for(String key : map.keySet()){
-        //     Object o = map.get(key);
-        //     log.info("key:{},Value:{}",key,o);
-        // }
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
-        model.setColumnIdentifiers(new Object[]{"网关编号","设备编号","传感器名称","传感器数值","时间","是否报警"});
+        model.setColumnIdentifiers(new Object[]{"名称","设备编号","传感器名称","传感器数值","时间","是否报警"});
         for (int i = 0; i < arr.length; i++) {
             ArrayList list = map.get(arr[i]);
             model.addRow(list.toArray());
         }
-
         table.setRowHeight(45);
 
     }
