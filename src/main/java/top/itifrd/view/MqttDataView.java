@@ -4,13 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import top.itifrd.config.MqttHandleCallBack;
-
-import javax.annotation.PostConstruct;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
@@ -28,13 +24,14 @@ import java.util.*;
 @EnableScheduling // 定时任务
 public class MqttDataView implements Runnable{
     private JTable table =null;
+    private JFrame frame= null;
     @Autowired
     private MqttHandleCallBack mqttHandleCallBack;
 
     @Bean
     public JFrame getDataView(){
         TableColumn column;
-        JFrame frame=new JFrame("消息数据表");
+        frame=new JFrame("消息数据表");
         frame.setSize(800,600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         Container contentPane=frame.getContentPane();
@@ -49,18 +46,19 @@ public class MqttDataView implements Runnable{
         table.setFont(new Font("新宋体", Font.PLAIN, 26));
         JTableHeader head = table.getTableHeader(); // 创建表格标题对象
         head.setPreferredSize(new Dimension(head.getWidth(), 40));// 设置表头大小
-        head.setFont(new Font("楷体", Font.PLAIN, 26));// 设置表格字体
+        head.setFont(new Font("楷体", Font.PLAIN, 23));// 设置表格字体
         contentPane.add(new JScrollPane(table));
         frame.setVisible(true);
         return frame;
     }
 
     @Override
-    @Scheduled(cron = "0/2 * * * * ?")
+    @Scheduled(cron = "0/5 * * * * ?")
     public void run() {
         Map<String, ArrayList> map = mqttHandleCallBack.getMap();
         Set set=map.keySet();
         Object[] arr=set.toArray();
+        // 把键进行排序
         Arrays.sort(arr);
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
@@ -70,6 +68,5 @@ public class MqttDataView implements Runnable{
             model.addRow(list.toArray());
         }
         table.setRowHeight(45);
-
     }
 }
